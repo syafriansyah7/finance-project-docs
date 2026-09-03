@@ -1,0 +1,99 @@
+﻿@page "/"
+@inject IHttpClientFactory HttpFactory
+
+<PageTitle>Dashboard</PageTitle>
+
+<div class="dash">
+    <h1>Dashboard <span class="muted">@month</span></h1>
+
+    @if (summary == null)
+    {
+        <p class="muted">Memuat...</p>
+    }
+    else
+    {
+        <div class="stats">
+            <div class="card"><div class="label">Income</div><div class="value income">Rp @Fmt(summary.Income)</div></div>
+            <div class="card"><div class="label">Expense</div><div class="value expense">Rp @Fmt(summary.Expense)</div></div>
+            <div class="card"><div class="label">Net</div><div class="value @(summary.Net >= 0 ? "income" : "expense")">Rp @Fmt(summary.Net)</div></div>
+            <div class="card"><div class="label">Total Balance</div><div class="value">@Fmt(summary.Accounts.Sum(a => a.Balance))</div></div>
+        </div>
+
+        <div class="grid">
+            <div class="panel">
+                <h3>Expense by Category</h3>
+                @if (summary.CategoryExpenses.Count == 0)
+                {
+                    <p class="muted">Belum ada pengeluaran bulan ini.</p>
+                }
+                else
+                {
+                    @foreach (var c in summary.CategoryExpenses)
+                    {
+                        <div class="row"><span>@c.CategoryName</span><span>Rp @Fmt(c.Amount)</span></div>
+                    }
+                }
+            </div>
+            <div class="panel">
+                <h3>Recent Transactions</h3>
+                @if (summary.RecentTransactions.Count == 0)
+                {
+                    <p class="muted">Belum ada transaksi.</p>
+                }
+                else
+                {
+                    @foreach (var t in summary.RecentTransactions)
+                    {
+                        <div class="row"><span>@t.Type @Fmt(t.Amount)</span><span class="muted">@t.TransactionDate.ToString("dd MMM")</span></div>
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>Accounts</h3>
+            @foreach (var a in summary.Accounts)
+            {
+                <div class="row"><span>@a.Name</span><span>Rp @Fmt(a.Balance)</span></div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+.dash { max-width: 960px; margin: 0 auto; padding: 24px; font-family: system-ui, -apple-system, sans-serif; }
+.muted { color: #6b7280; font-size: 14px; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 16px 0; }
+.card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; background: #fff; }
+.label { font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
+.value { font-size: 20px; font-weight: 600; margin-top: 4px; }
+.value.income { color: #059669; }
+.value.expense { color: #dc2626; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.panel { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; background: #fff; }
+.panel h3 { margin: 0 0 12px; font-size: 14px; }
+.row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6; font-size: 14px; }
+@@media (max-width: 640px) { .stats { grid-template-columns: 1fr 1fr; } .grid { grid-template-columns: 1fr; } }
+</style>
+
+@code {
+    private string month = DateTime.UtcNow.ToString("yyyy-MM");
+    private DashSummary? summary;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var client = HttpFactory.CreateClient("Api");
+            summary = await client.GetFromJsonAsync<DashSummary>($"/api/v1/dashboard/summary?month={month}");
+        }
+        catch { }
+    }
+
+    private static string Fmt(long v) => v.ToString("N0");
+
+    private record AccountDto(Guid Id, string Name, long Balance);
+    private record CategoryDto(Guid CategoryId, string CategoryName, long Amount);
+    private record TxDto(Guid Id, string Type, long Amount, Guid AccountId, DateTime TransactionDate);
+    private record DashSummary(string Month, long Income, long Expense, long Net, List<AccountDto> Accounts, List<CategoryDto> CategoryExpenses, List<TxDto> RecentTransactions);
+}

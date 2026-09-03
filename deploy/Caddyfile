@@ -1,0 +1,11 @@
+{
+	auto_https off
+}
+
+:80, :443 {
+	reverse_proxy api:8080
+}
+# Production: replace :80 with your DuckDNS/sslip.io domain
+# example: yourname.duckdns.org {
+#   reverse_proxy api:8080
+# }
