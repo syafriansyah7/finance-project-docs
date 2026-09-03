@@ -119,10 +119,14 @@
         try
         {
             var client = HttpFactory.CreateClient("Api");
+            var syafri = await client.GetFromJsonAsync<SyafriRes>("/api/v1/auth/syafri");
+            if (syafri != null) client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", syafri.accessToken);
             summary = await client.GetFromJsonAsync<DashSummary>($"/api/v1/dashboard/summary?month={month}");
         }
         catch (Exception ex) { error = ex.Message; }
     }
+
+    private record SyafriRes(string accessToken, string email);
 
     private static string Fmt(long v) => v.ToString("N0");
 

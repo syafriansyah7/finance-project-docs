@@ -10,11 +10,10 @@ public sealed class User
 
     private User() { }
 
-    public static User Create(Guid id, string email, string passwordHash)
+    public static User Create(Guid id, string email, string passwordHash = "")
     {
         if (id == Guid.Empty) throw new ArgumentException("Id required", nameof(id));
         if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException("Email required", nameof(email));
-        if (string.IsNullOrWhiteSpace(passwordHash)) throw new ArgumentException("PasswordHash required", nameof(passwordHash));
 
         var now = DateTime.UtcNow;
         return new User

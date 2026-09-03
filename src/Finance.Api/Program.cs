@@ -44,6 +44,14 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<FinanceDbContext>();
+    await db.Database.EnsureCreatedAsync();
+    var auth = scope.ServiceProvider.GetRequiredService<AuthService>();
+    await auth.EnsureSyafriAsync(CancellationToken.None);
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -54,6 +62,13 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+
+app.MapGet("/api/v1/auth/syafri", async (AuthService auth, CancellationToken ct) =>
+{
+    var user = await auth.EnsureSyafriAsync(ct);
+    var token = auth.TokenFor(user);
+    return Results.Ok(new { accessToken = token, email = user.Email });
+});
 
 app.MapPost("/api/v1/auth/register", async (RegisterRequest req, AuthService auth, CancellationToken ct) =>
 {
