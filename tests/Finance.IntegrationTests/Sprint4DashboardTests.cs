@@ -40,11 +40,11 @@ public class Sprint4DashboardTests : IClassFixture<WebApplicationFactory<Program
         var catExp = (await (await client.PostAsJsonAsync("/api/v1/categories", new { name = "Food", kind = "Expense" })).Content.ReadFromJsonAsync<IdRes>())!.Id;
 
         var month = DateTime.UtcNow.ToString("yyyy-MM");
-        var date = DateTime.UtcNow;
+        var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 26, 12, 0, 0, DateTimeKind.Utc);
         await client.PostAsJsonAsync("/api/v1/transactions", new { type = "Income", accountId = acc, categoryId = catInc, amount = 10000000, currency = "IDR", transactionDate = date });
         await client.PostAsJsonAsync("/api/v1/transactions", new { type = "Expense", accountId = acc, categoryId = catExp, amount = 3250000, currency = "IDR", transactionDate = date });
 
-        var dash = await client.GetFromJsonAsync<DashRes>($"/api/v1/dashboard/summary?month={month}");
+        var dash = await client.GetFromJsonAsync<DashRes>($"/api/v1/dashboard/summary?period={month}");
         Assert.NotNull(dash);
         Assert.Equal(10000000, dash!.Income);
         Assert.Equal(3250000, dash.Expense);

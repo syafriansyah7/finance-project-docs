@@ -39,6 +39,19 @@ public sealed class AuthService(FinanceDbContext db, string signingKey)
         var user = User.Create(Guid.Parse("11111111-1111-1111-1111-111111111111"), email, "");
         db.Users.Add(user);
         await db.SaveChangesAsync(ct);
+
+        var bank = Account.Create(Guid.Parse("22222222-2222-2222-2222-222222222222"), user.Id, "Bank", "Bank", "IDR");
+        db.Accounts.Add(bank);
+        var cash = Account.Create(Guid.Parse("33333333-3333-3333-3333-333333333333"), user.Id, "Cash", "Cash", "IDR");
+        db.Accounts.Add(cash);
+
+        var cats = new[] { ("Food", "Expense"), ("Transport", "Expense"), ("Bills", "Expense"), ("Shopping", "Expense"), ("Salary", "Income") };
+        foreach (var (n, k) in cats)
+        {
+            var cat = Category.Create(Guid.NewGuid(), user.Id, n, k);
+            db.Categories.Add(cat);
+        }
+        await db.SaveChangesAsync(ct);
         return user;
     }
 

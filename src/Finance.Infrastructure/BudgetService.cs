@@ -5,9 +5,10 @@ namespace Finance.Infrastructure;
 
 public sealed class BudgetService(FinanceDbContext db)
 {
-    public async Task<Budget> UpsertAsync(Guid userId, Guid categoryId, DateTime month, long amount, string currency, CancellationToken ct)
+    public async Task<Budget> UpsertAsync(Guid userId, Guid categoryId, DateTime period, long amount, string currency, CancellationToken ct)
     {
-        var m = new DateTime(month.Year, month.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var m = new DateTime(period.Year, period.Month, 25, 0, 0, 0, DateTimeKind.Utc);
+        if (period.Day < 25) m = m.AddMonths(-1);
         var existing = await db.Budgets.FirstOrDefaultAsync(b => b.UserId == userId && b.CategoryId == categoryId && b.Month == m, ct);
         if (existing != null) { existing.UpdateAmount(amount); await db.SaveChangesAsync(ct); return existing; }
 
@@ -20,9 +21,10 @@ public sealed class BudgetService(FinanceDbContext db)
         return budget;
     }
 
-    public async Task<IReadOnlyList<Budget>> ListAsync(Guid userId, DateTime month, CancellationToken ct)
+    public async Task<IReadOnlyList<Budget>> ListAsync(Guid userId, DateTime period, CancellationToken ct)
     {
-        var m = new DateTime(month.Year, month.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var m = new DateTime(period.Year, period.Month, 25, 0, 0, 0, DateTimeKind.Utc);
+        if (period.Day < 25) m = m.AddMonths(-1);
         return await db.Budgets.Where(b => b.UserId == userId && b.Month == m).ToListAsync(ct);
     }
 

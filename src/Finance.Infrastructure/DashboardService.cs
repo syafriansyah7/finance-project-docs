@@ -5,9 +5,10 @@ namespace Finance.Infrastructure;
 
 public sealed class DashboardService(FinanceDbContext db)
 {
-    public async Task<DashboardSummary> SummaryAsync(Guid userId, DateTime month, CancellationToken ct)
+    public async Task<DashboardSummary> SummaryAsync(Guid userId, DateTime period, CancellationToken ct)
     {
-        var start = new DateTime(month.Year, month.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var start = new DateTime(period.Year, period.Month, 25, 0, 0, 0, DateTimeKind.Utc);
+        if (period.Day < 25) start = start.AddMonths(-1);
         var end = start.AddMonths(1).AddTicks(-1);
 
         var txs = await db.Transactions.Where(t => t.UserId == userId && t.DeletedAt == null && t.TransactionDate >= start && t.TransactionDate <= end).ToListAsync(ct);
@@ -29,7 +30,7 @@ public sealed class DashboardService(FinanceDbContext db)
 
         var recent = await db.Transactions.Where(t => t.UserId == userId && t.DeletedAt == null).OrderByDescending(t => t.TransactionDate).Take(10).ToListAsync(ct);
 
-        return new DashboardSummary($"{month:yyyy-MM}", income, expense, net, accountBalances, categoryDtos, recent);
+        return new DashboardSummary($"{start:yyyy-MM-dd} to {end:yyyy-MM-dd}", income, expense, net, accountBalances, categoryDtos, recent);
     }
 }
 

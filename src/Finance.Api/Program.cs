@@ -216,10 +216,14 @@ app.MapGet("/api/v1/accounts/{id:guid}/balance", async (Guid id, ClaimsPrincipal
     return Results.Ok(new { accountId = id, balance = bal });
 }).RequireAuthorization();
 
-app.MapGet("/api/v1/dashboard/summary", async (ClaimsPrincipal user, string? month, DashboardService svc, CancellationToken ct) =>
+app.MapGet("/api/v1/dashboard/summary", async (ClaimsPrincipal user, string? month, string? period, DashboardService svc, CancellationToken ct) =>
 {
     var userId = Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
-    var m = string.IsNullOrEmpty(month) ? new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1) : DateTime.Parse(month + "-01");
+    var p = period ?? month;
+    DateTime m;
+    if (string.IsNullOrEmpty(p)) m = DateTime.UtcNow;
+    else if (p.Length == 7) m = DateTime.Parse(p + "-25");
+    else m = DateTime.Parse(p);
     var s = await svc.SummaryAsync(userId, m, ct);
     return Results.Ok(new
     {
@@ -233,10 +237,14 @@ app.MapGet("/api/v1/dashboard/summary", async (ClaimsPrincipal user, string? mon
     });
 }).RequireAuthorization();
 
-app.MapGet("/api/v1/budgets", async (ClaimsPrincipal user, string? month, BudgetService svc, FinanceDbContext db, CancellationToken ct) =>
+app.MapGet("/api/v1/budgets", async (ClaimsPrincipal user, string? month, string? period, BudgetService svc, FinanceDbContext db, CancellationToken ct) =>
 {
     var userId = Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
-    var m = string.IsNullOrEmpty(month) ? new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1) : DateTime.Parse(month + "-01");
+    var p = period ?? month;
+    DateTime m;
+    if (string.IsNullOrEmpty(p)) m = DateTime.UtcNow;
+    else if (p.Length == 7) m = DateTime.Parse(p + "-25");
+    else m = DateTime.Parse(p);
     var budgets = await svc.ListAsync(userId, m, ct);
     var txs = await db.Transactions.Where(t => t.UserId == userId && t.DeletedAt == null).ToListAsync(ct);
     return Results.Ok(budgets.Select(b =>
@@ -251,7 +259,8 @@ app.MapPost("/api/v1/budgets", async (ClaimsPrincipal user, CreateBudgetRequest 
     var userId = Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
     try
     {
-        var b = await svc.UpsertAsync(userId, req.CategoryId, DateTime.Parse(req.Month + "-01"), req.Amount, req.Currency ?? "IDR", ct);
+        var period = req.Month.Length == 7 ? req.Month + "-25" : req.Month;
+        var b = await svc.UpsertAsync(userId, req.CategoryId, DateTime.Parse(period), req.Amount, req.Currency ?? "IDR", ct);
         return Results.Created($"/api/v1/budgets/{b.Id}", new { b.Id, b.Amount });
     }
     catch (KeyNotFoundException ex) { return Results.Json(new { error = new { code = "not_found", message = ex.Message } }, statusCode: 404); }

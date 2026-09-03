@@ -21,7 +21,8 @@ public sealed class Budget
         if (amount < 0) throw new ArgumentException("Amount must be >=0", nameof(amount));
         if (currency.Length != 3) throw new ArgumentException("Currency must be 3 chars", nameof(currency));
 
-        var m = new DateTime(month.Year, month.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var m = new DateTime(month.Year, month.Month, 25, 0, 0, 0, DateTimeKind.Utc);
+        if (month.Day < 25) m = m.AddMonths(-1);
         return new Budget
         {
             Id = id,
@@ -44,8 +45,11 @@ public sealed class Budget
 
     public (long spent, long remaining, double pct) Progress(IEnumerable<Transaction> transactions)
     {
+        var start = new DateTime(Month.Year, Month.Month, 25, 0, 0, 0, DateTimeKind.Utc);
+        if (Month.Day < 25) start = start.AddMonths(-1);
+        var end = start.AddMonths(1).AddTicks(-1);
         var spent = transactions.Where(t => t.CategoryId == CategoryId && t.Type == TransactionType.Expense && t.DeletedAt == null
-            && t.TransactionDate.Year == Month.Year && t.TransactionDate.Month == Month.Month).Sum(t => t.Amount);
+            && t.TransactionDate >= start && t.TransactionDate <= end).Sum(t => t.Amount);
         var remaining = Amount - spent;
         var pct = Amount == 0 ? 0 : (double)spent / Amount * 100;
         return (spent, remaining, pct);

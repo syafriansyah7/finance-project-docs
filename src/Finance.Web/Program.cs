@@ -3,7 +3,9 @@ using Finance.Web.Components;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorComponents();
-builder.Services.AddHttpClient("Api", c => c.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5000"));
+var apiUrl = builder.Configuration["ApiBaseUrl"] ?? builder.Configuration["ConnectionStrings__Api"] ?? "http://localhost:5000";
+if (!apiUrl.StartsWith("http")) apiUrl = "http://" + apiUrl;
+builder.Services.AddHttpClient("Api", c => c.BaseAddress = new Uri(apiUrl));
 
 var app = builder.Build();
 

@@ -31,7 +31,11 @@
             <p class="muted">Belum ada akun. Buat via <code>POST /api/v1/accounts</code> atau login dulu.</p>
             <div class="hint">Akun contoh: Cash, Bank, EWallet — balance dihitung dari transaksi (bukan field manual).</div>
         </div>
-        <p class="muted" style="margin-top:12px;">@error</p>
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <p class="muted" style="margin-top:12px; color:#dc2626;">Error: @error <button @onclick="Retry" style="margin-left:8px; padding:4px 8px; border:1px solid #e5e7eb; border-radius:6px; background:#fff;">Retry</button></p>
+        }
+        <p class="hint">API: @apiUrl • Jika stuck, cek `dotnet run Finance.Api` + `ApiBaseUrl`</p>
     }
     else
     {
@@ -110,21 +114,33 @@
 </style>
 
 @code {
-    private string month = DateTime.UtcNow.ToString("yyyy-MM");
+    private string month = GetPeriod(DateTime.UtcNow);
     private DashSummary? summary;
     private string error = "";
+    private string apiUrl = "";
+
+    private static string GetPeriod(DateTime d) => d.Day >= 25 ? d.ToString("yyyy-MM") : d.AddMonths(-1).ToString("yyyy-MM");
 
     protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
     {
         try
         {
             var client = HttpFactory.CreateClient("Api");
+            apiUrl = client.BaseAddress?.ToString() ?? "";
+            error = "";
             var syafri = await client.GetFromJsonAsync<SyafriRes>("/api/v1/auth/syafri");
             if (syafri != null) client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", syafri.accessToken);
-            summary = await client.GetFromJsonAsync<DashSummary>($"/api/v1/dashboard/summary?month={month}");
+            summary = await client.GetFromJsonAsync<DashSummary>($"/api/v1/dashboard/summary?period={month}");
         }
         catch (Exception ex) { error = ex.Message; }
     }
+
+    private async Task Retry() => await Load();
 
     private record SyafriRes(string accessToken, string email);
 
