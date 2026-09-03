@@ -133,16 +133,67 @@ input, select { width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-ra
         if (amount <= 0) { confirm = "Nominal harus > 0"; return; }
         if (type != 2 && string.IsNullOrEmpty(category)) { confirm = "Pilih kategori dulu"; return; }
         status = "pending";
-        var label = type == 0 ? "Expense" : type == 1 ? "Income" : "Transfer";
-        var catName = categories.FirstOrDefault(c => c.Id.ToString() == category)?.Name ?? category ?? "-";
-        confirm = $"{label} Rp {amount:N0} - {catName} - {account} tersimpan ✓";
-        recent.Insert(0, (confirm, DateTime.Now));
-        status = "synced";
-        await Task.Delay(2000);
         confirm = null;
-        amount = 0;
-        note = null;
+
+        try
+        {
+            var client = HttpFactory.CreateClient("Api");
+            var syafri = await client.GetFromJsonAsync<SyafriRes>("/api/v1/auth/syafri");
+            if (syafri != null) client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", syafri.accessToken);
+
+            var accs = await client.GetFromJsonAsync<List<AccDto>>("/api/v1/accounts");
+            var accId = accs?.FirstOrDefault(a => a.Name == account)?.Id;
+            if (accId == null) { confirm = $"Akun {account} tidak ditemukan"; status = "failed"; return; }
+
+            Guid? catId = null;
+            if (type != 2) catId = Guid.Parse(category!);
+
+            Guid? toAccId = null;
+            if (type == 2)
+            {
+                var to = accs?.FirstOrDefault(a => a.Name == toAccount)?.Id;
+                if (to == null) { confirm = $"Akun tujuan {toAccount} tidak ditemukan"; status = "failed"; return; }
+                toAccId = to;
+            }
+
+            var payload = new
+            {
+                type = type == 0 ? "Expense" : type == 1 ? "Income" : "Transfer",
+                accountId = accId,
+                transferAccountId = toAccId,
+                categoryId = catId,
+                amount,
+                currency = "IDR",
+                description = note,
+                transactionDate = date.ToUniversalTime()
+            };
+
+            var res = await client.PostAsJsonAsync("/api/v1/transactions", payload);
+            if (!res.IsSuccessStatusCode)
+            {
+                var err = await res.Content.ReadAsStringAsync();
+                confirm = $"Gagal: {res.StatusCode} {err}";
+                status = "failed";
+                return;
+            }
+
+            var label = type == 0 ? "Expense" : type == 1 ? "Income" : "Transfer";
+            var catName = categories.FirstOrDefault(c => c.Id.ToString() == category)?.Name ?? "-";
+            confirm = $"{label} Rp {amount:N0} - {catName} - {account} tersimpan ✓";
+            recent.Insert(0, (confirm, DateTime.Now));
+            status = "synced";
+            await Task.Delay(1500);
+            amount = 0;
+            note = null;
+        }
+        catch (Exception ex)
+        {
+            confirm = $"Gagal simpan: {ex.Message}";
+            status = "failed";
+        }
     }
+
+    private record AccDto(Guid Id, string Name, string Type, string Currency, bool IsArchived);
 
     private record CatDto(Guid Id, string Name, string Kind);
     private record SyafriRes(string accessToken, string email);

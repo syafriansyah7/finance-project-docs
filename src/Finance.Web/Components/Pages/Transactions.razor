@@ -1,4 +1,32 @@
 @page "/transactions"
+@inject IHttpClientFactory HttpFactory
+
 <h3>Transactions</h3>
-<p class="muted">Daftar transaksi — filter: tanggal, tipe (Income/Expense/Transfer), akun, kategori. Data dari <code>GET /api/v1/transactions</code> (butuh token Syafri).</p>
-<div class="panel"><p class="muted">Belum ada transaksi. Tambah via Mobile atau <code>POST /api/v1/transactions</code>.</p></div>
+@if (items == null) { <p class="muted">Memuat...</p> }
+else if (items.Count == 0) { <div class="panel"><p class="muted">Belum ada transaksi. Tambah via Mobile.</p></div> }
+else
+{
+    <div class="panel">
+        @foreach (var t in items)
+        {
+            <div class="row"><span>@t.Type Rp @t.Amount.ToString("N0") - @t.Description</span><span class="muted">@t.TransactionDate.ToString("dd MMM HH:mm")</span></div>
+        }
+    </div>
+}
+
+@code {
+    private List<TxDto>? items;
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var c = HttpFactory.CreateClient("Api");
+            var s = await c.GetFromJsonAsync<SyafriRes>("/api/v1/auth/syafri");
+            if (s != null) c.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", s.accessToken);
+            items = await c.GetFromJsonAsync<List<TxDto>>("/api/v1/transactions?page=1&pageSize=20");
+        }
+        catch { items = new(); }
+    }
+    private record TxDto(Guid Id, string Type, long Amount, string? Description, DateTime TransactionDate);
+    private record SyafriRes(string accessToken, string email);
+}
