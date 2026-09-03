@@ -9,7 +9,7 @@ else
     <div class="panel">
         @foreach (var t in items)
         {
-            <div class="row"><span>@t.Type Rp @t.Amount.ToString("N0") - @t.Description</span><span class="muted">@t.TransactionDate.ToString("dd MMM HH:mm")</span></div>
+            <div class="row"><span>@t.TypeName Rp @t.Amount.ToString("N0") - @t.Description</span><span class="muted">@t.TransactionDate.ToString("dd MMM HH:mm")</span></div>
         }
     </div>
 }
@@ -27,6 +27,9 @@ else
         }
         catch { items = new(); }
     }
-    private record TxDto(Guid Id, string Type, long Amount, string? Description, DateTime TransactionDate);
+    private record TxDto(Guid Id, object Type, long Amount, string? Description, DateTime TransactionDate)
+    {
+        public string TypeName => Type?.ToString() ?? "";
+    }
     private record SyafriRes(string accessToken, string email);
 }

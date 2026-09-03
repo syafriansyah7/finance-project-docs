@@ -71,7 +71,7 @@
                 {
                     @foreach (var t in summary.RecentTransactions)
                     {
-                        <div class="row"><span>@t.Type @Fmt(t.Amount)</span><span class="muted">@t.TransactionDate.ToString("dd MMM HH:mm")</span></div>
+                        <div class="row"><span>@t.TypeName @Fmt(t.Amount)</span><span class="muted">@t.TransactionDate.ToString("dd MMM HH:mm")</span></div>
                     }
                 }
             </div>
@@ -148,6 +148,9 @@
 
     private record AccountDto(Guid Id, string Name, long Balance);
     private record CategoryDto(Guid CategoryId, string CategoryName, long Amount);
-    private record TxDto(Guid Id, string Type, long Amount, Guid AccountId, DateTime TransactionDate);
+    private record TxDto(Guid Id, object Type, long Amount, Guid AccountId, DateTime TransactionDate)
+    {
+        public string TypeName => Type?.ToString() ?? "";
+    }
     private record DashSummary(string Month, long Income, long Expense, long Net, List<AccountDto> Accounts, List<CategoryDto> CategoryExpenses, List<TxDto> RecentTransactions);
 }
