@@ -67,7 +67,7 @@
                 {
                     @foreach (var t in summary.RecentTransactions)
                     {
-                        <div class="row"><span>@t.Type @Fmt(t.Amount)</span><span class="muted">@t.TransactionDate.ToString("dd MMM")</span></div>
+                        <div class="row"><span>@t.Type @Fmt(t.Amount)</span><span class="muted">@t.TransactionDate.ToString("dd MMM HH:mm")</span></div>
                     }
                 }
             </div>
