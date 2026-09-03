@@ -1,0 +1,14 @@
+@page "/settings"
+<h3>Pengaturan</h3>
+<p class="muted">API URL untuk sync — ganti jika Tunnel ganti. Default: trycloudflare.</p>
+<input @bind="apiUrl" placeholder="https://xxx.trycloudflare.com" style="width:100%; padding:12px; border:1px solid #e5e7eb; border-radius:10px;" />
+<button @onclick="Save" style="margin-top:12px; padding:12px; width:100%; background:#111827; color:#fff; border:0; border-radius:10px;">Simpan & Restart App</button>
+<p class="muted" style="margin-top:8px;">User: Syafri (syafri@example.com) — tanpa password, private.</p>
+
+@code {
+    private string apiUrl = Preferences.Get("api_url", "https://senate-equipment-univ-generate.trycloudflare.com");
+    private void Save()
+    {
+        Preferences.Set("api_url", apiUrl);
+    }
+}

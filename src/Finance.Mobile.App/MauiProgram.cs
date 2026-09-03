@@ -21,7 +21,11 @@ public static class MauiProgram
 #endif
 
 		builder.Services.AddSingleton<ISyncQueue>(sp => new SqliteSyncQueue(System.IO.Path.Combine(FileSystem.AppDataDirectory, "finance.db")));
-		builder.Services.AddSingleton(sp => new HttpClient { BaseAddress = new Uri("https://rna-coupon-charming-flickr.trycloudflare.com") });
+		builder.Services.AddSingleton(sp =>
+		{
+			var url = Preferences.Get("api_url", "https://senate-equipment-univ-generate.trycloudflare.com");
+			return new HttpClient { BaseAddress = new Uri(url) };
+		});
 
 		return builder.Build();
 	}
