@@ -2,14 +2,21 @@
 
 ## 1. Target platform
 
-Primary target — **Opsi A (tanpa CC, direkomendasikan untuk user tanpa kartu kredit):**
+Primary target — **Opsi A (tanpa CC, direkomendasikan — Render/Koyeb butuh CC untuk $1 hold, jadi pakai Tunnel):**
 
 ```text
-Koyeb (API, Docker, auto-HTTPS) + Neon (PostgreSQL Serverless) — daftar email saja, tanpa CC
-Worker opsional di Koyeb, backup ke Google Drive via rclone (15GB free)
+Laptop (dotnet run Finance.Api :5000) + Cloudflare Tunnel (trycloudflare.com, email saja, tanpa CC, auto-HTTPS) + Neon PostgreSQL (email saja, tanpa CC)
+Backup: Neon pg_dump → Google Drive (15GB free)
+Cocok untuk user tanpa CC dan tanpa home lab — cukup laptop yang sudah ada
 ```
 
-Alternatif — **Opsi B (butuh CC, jika ada kartu fisik Mastercard/Visa):**
+Alternatif — **Opsi B (tanpa CC, PaaS):**
+
+```text
+Koyeb (API) + Neon — daftar email saja, tanpa CC (jika Koyeb tersedia; saat ini migrasi ke Mistral, pakai Deta/Render sebagai fallback tapi Render butuh CC)
+```
+
+Alternatif — **Opsi C (butuh CC, jika ada kartu fisik Mastercard/Visa):**
 
 ```text
 Oracle Cloud Always Free
@@ -18,7 +25,7 @@ Docker + Docker Compose
 Region priority for Indonesia: ap-singapore-1 (closest), fallback ap-tokyo-1 / ap-mumbai-1 if Ampere A1 capacity is full
 ```
 
-The free-tier resource availability and limits must be re-verified before provisioning because cloud-provider terms can change. Always verify Ampere A1 (ARM) capacity in the chosen region before provisioning — Singapore is closest for Indonesia but frequently at capacity. **Jika tidak punya CC, pakai Opsi A (Koyeb+Neon) — tanpa CC, tanpa home lab.**
+All free-tier terms can change. **Jika tidak punya CC dan tidak punya home lab, pakai Opsi A (Laptop+Tunnel) — satu-satunya yang benar-benar tanpa CC dan langsung jalan 5 menit (lihat deploy/TUNNEL_LAPTOP_GUIDE.md).**
 
 ## 2. Production services
 
@@ -94,7 +101,22 @@ Exact variables depend on implementation.
 
 ## 5. Deployment flow
 
-### Opsi A — Koyeb+Neon (tanpa CC, Rp0, tanpa home lab) — DEFAULT untuk user tanpa kartu kredit
+### Opsi A — Laptop + Tunnel + Neon (tanpa CC, tanpa home lab) — DEFAULT untuk user tanpa kartu kredit
+
+```text
+1. Build and test locally (dotnet test)
+2. Daftar Neon (email saja) → copy ConnectionStrings__Default (pooled) — sudah selesai: ep-jolly-wildflower-...neon.tech
+3. Di laptop: export ConnectionStrings__Default + Jwt__SigningKey + ASPNETCORE_URLS=http://localhost:5000
+4. dotnet run --project src/Finance.Api (cek http://localhost:5000/health)
+5. Di terminal kedua: cloudflared tunnel --url http://localhost:5000 → dapat https://xxx.trycloudflare.com
+6. Verify https://xxx.trycloudflare.com/health
+7. Ganti ApiBaseUrl di MAUI ke https://xxx.trycloudflare.com → verify mobile sync
+8. Dashboard Blazor: set ApiBaseUrl ke sama → verify
+9. Backup: pg_dump Neon → rclone → Google Drive (deploy/backup-neon.sh)
+10. Opsional: pakai ./deploy/tunnel.sh (jalanin API + tunnel sekaligus)
+```
+
+### Opsi B — Koyeb+Neon (tanpa CC, PaaS) — jika Koyeb tersedia
 
 ```text
 1. Build and test locally (dotnet test)
