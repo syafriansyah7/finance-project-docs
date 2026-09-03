@@ -1,0 +1,83 @@
+@using Finance.Mobile
+@namespace Finance.Mobile.Components.Pages
+
+<div class="mobile">
+    <h2>Tambah Transaksi</h2>
+
+    <div class="seg">
+        <button class="@(type==0?"on":"")" @onclick="()=>type=0">Expense</button>
+        <button class="@(type==1?"on":"")" @onclick="()=>type=1">Income</button>
+        <button class="@(type==2?"on":"")" @onclick="()=>type=2">Transfer</button>
+    </div>
+
+    <label>Nominal (Rp)</label>
+    <input type="number" @bind="amount" placeholder="25000" />
+
+    @if (type != 2)
+    {
+        <label>Kategori</label>
+        <input @bind="category" placeholder="Food / Salary" />
+    }
+
+    <label>Akun</label>
+    <select @bind="account">
+        <option>Cash</option>
+        <option>Bank</option>
+        <option>EWallet</option>
+    </select>
+
+    @if (type == 2)
+    {
+        <label>Ke Akun</label>
+        <select @bind="toAccount"><option>Cash</option><option>Bank</option></select>
+    }
+
+    <label>Tanggal</label>
+    <input type="date" @bind="date" />
+
+    <label>Catatan (opsional)</label>
+    <input @bind="note" placeholder="Nasi padang" />
+
+    <button class="save" @onclick="Save">Simpan</button>
+
+    <div class="status">
+        @if (status == "pending") { <span class="badge pending">Menunggu sync (3)</span> }
+        else if (status == "synced") { <span class="badge ok">Tersinkron</span> }
+        else if (status == "failed") { <span class="badge fail">Gagal - tap retry</span> }
+    </div>
+
+    <p class="hint">Offline-first: transaksi disimpan di SQLite dan muncul langsung, sync otomatis saat online.</p>
+</div>
+
+<style>
+.mobile { max-width: 380px; margin: 0 auto; padding: 16px; font-family: system-ui; }
+.seg { display: flex; gap: 8px; margin: 12px 0; }
+.seg button { flex: 1; padding: 10px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; }
+.seg button.on { background: #111827; color: #fff; border-color: #111827; }
+label { display: block; font-size: 12px; color: #6b7280; margin-top: 12px; text-transform: uppercase; }
+input, select { width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; margin-top: 4px; font-size: 16px; }
+.save { width: 100%; margin-top: 16px; padding: 14px; background: #111827; color: #fff; border: 0; border-radius: 12px; font-weight: 600; font-size: 16px; }
+.badge { display: inline-block; margin-top: 12px; padding: 6px 10px; border-radius: 20px; font-size: 12px; }
+.badge.pending { background: #fef3c7; color: #92400e; }
+.badge.ok { background: #d1fae5; color: #065f46; }
+.badge.fail { background: #fee2e2; color: #991b1b; }
+.hint { font-size: 12px; color: #6b7280; margin-top: 12px; line-height: 1.4; }
+</style>
+
+@code {
+    private int type;
+    private long amount;
+    private string? category;
+    private string account = "Cash";
+    private string toAccount = "Bank";
+    private DateTime date = DateTime.Today;
+    private string? note;
+    private string status = "pending";
+
+    private async Task Save()
+    {
+        status = "pending";
+        await Task.Delay(300);
+        status = "synced";
+    }
+}
