@@ -1,6 +1,7 @@
 ﻿<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">Finance.Web</a>
+        <a class="navbar-brand" href="">Finance</a>
+        <span class="brand-sub">personal • offline-first</span>
     </div>
 </div>
 
@@ -8,17 +9,13 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
+        <div class="nav-item px-3"><NavLink class="nav-link" href="" Match="NavLinkMatch.All">Dashboard</NavLink></div>
+        <div class="nav-item px-3"><NavLink class="nav-link" href="transactions">Transactions</NavLink></div>
+        <div class="nav-item px-3"><NavLink class="nav-link" href="accounts">Accounts</NavLink></div>
+        <div class="nav-item px-3"><NavLink class="nav-link" href="categories">Categories</NavLink></div>
+        <div class="nav-item px-3"><NavLink class="nav-link" href="budgets">Budgets</NavLink></div>
+        <div class="nav-item px-3"><NavLink class="nav-link" href="mobile">Mobile</NavLink></div>
     </nav>
+    <div class="nav-footer px-3">Rp0 • Neon • v1</div>
 </div>
 

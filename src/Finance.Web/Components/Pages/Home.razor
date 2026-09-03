@@ -8,7 +8,30 @@
 
     @if (summary == null)
     {
-        <p class="muted">Memuat...</p>
+        <div class="stats">
+            <div class="card"><div class="label">Income</div><div class="value income">Rp 0</div><div class="muted" style="font-size:11px; margin-top:4px;">Bulan @month</div></div>
+            <div class="card"><div class="label">Expense</div><div class="value expense">Rp 0</div><div class="muted" style="font-size:11px; margin-top:4px;">Perlu login</div></div>
+            <div class="card"><div class="label">Net</div><div class="value">Rp 0</div><div class="muted" style="font-size:11px; margin-top:4px;">Menunggu data</div></div>
+            <div class="card"><div class="label">Total Balance</div><div class="value">Rp 0</div><div class="muted" style="font-size:11px; margin-top:4px;"><a href="/mobile">Buka Mobile</a> untuk isi</div></div>
+        </div>
+        <div class="grid">
+            <div class="panel">
+                <h3>Expense by Category</h3>
+                <p class="muted">Belum ada pengeluaran bulan ini. Tambah transaksi Expense di HP.</p>
+                <div class="hint">Contoh: Food Rp 900.000 / Rp 1.500.000 (60%) — muncul setelah ada data.</div>
+            </div>
+            <div class="panel">
+                <h3>Recent Transactions</h3>
+                <p class="muted">Belum ada transaksi. API: <code>/api/v1/transactions</code></p>
+                <div class="hint">Demo: Income 10jt, Expense 3.25jt, Net 6.75jt — sudah ada di Neon (demo2@example.com)</div>
+            </div>
+        </div>
+        <div class="panel" style="margin-top:16px;">
+            <h3>Accounts</h3>
+            <p class="muted">Belum ada akun. Buat via <code>POST /api/v1/accounts</code> atau login dulu.</p>
+            <div class="hint">Akun contoh: Cash, Bank, EWallet — balance dihitung dari transaksi (bukan field manual).</div>
+        </div>
+        <p class="muted" style="margin-top:12px;">@error</p>
     }
     else
     {
@@ -16,7 +39,7 @@
             <div class="card"><div class="label">Income</div><div class="value income">Rp @Fmt(summary.Income)</div></div>
             <div class="card"><div class="label">Expense</div><div class="value expense">Rp @Fmt(summary.Expense)</div></div>
             <div class="card"><div class="label">Net</div><div class="value @(summary.Net >= 0 ? "income" : "expense")">Rp @Fmt(summary.Net)</div></div>
-            <div class="card"><div class="label">Total Balance</div><div class="value">@Fmt(summary.Accounts.Sum(a => a.Balance))</div></div>
+            <div class="card"><div class="label">Total Balance</div><div class="value">Rp @Fmt(summary.Accounts.Sum(a => a.Balance))</div></div>
         </div>
 
         <div class="grid">
@@ -50,11 +73,18 @@
             </div>
         </div>
 
-        <div class="panel">
+        <div class="panel" style="margin-top:16px;">
             <h3>Accounts</h3>
-            @foreach (var a in summary.Accounts)
+            @if (summary.Accounts.Count == 0)
             {
-                <div class="row"><span>@a.Name</span><span>Rp @Fmt(a.Balance)</span></div>
+                <p class="muted">Belum ada akun.</p>
+            }
+            else
+            {
+                @foreach (var a in summary.Accounts)
+                {
+                    <div class="row"><span>@a.Name</span><span>Rp @Fmt(a.Balance)</span></div>
+                }
             }
         </div>
     }
@@ -63,6 +93,7 @@
 <style>
 .dash { max-width: 960px; margin: 0 auto; padding: 24px; font-family: system-ui, -apple-system, sans-serif; }
 .muted { color: #6b7280; font-size: 14px; }
+.hint { font-size: 11px; color: #9ca3af; margin-top: 8px; line-height: 1.4; }
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 16px 0; }
 .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; background: #fff; }
 .label { font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -73,12 +104,15 @@
 .panel { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; background: #fff; }
 .panel h3 { margin: 0 0 12px; font-size: 14px; }
 .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6; font-size: 14px; }
+.brand-sub { font-size: 10px; color: #9ca3af; margin-left: 8px; }
+.nav-footer { font-size: 11px; color: #9ca3af; margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 12px; }
 @@media (max-width: 640px) { .stats { grid-template-columns: 1fr 1fr; } .grid { grid-template-columns: 1fr; } }
 </style>
 
 @code {
     private string month = DateTime.UtcNow.ToString("yyyy-MM");
     private DashSummary? summary;
+    private string error = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -87,7 +121,7 @@
             var client = HttpFactory.CreateClient("Api");
             summary = await client.GetFromJsonAsync<DashSummary>($"/api/v1/dashboard/summary?month={month}");
         }
-        catch { }
+        catch (Exception ex) { error = ex.Message; }
     }
 
     private static string Fmt(long v) => v.ToString("N0");
