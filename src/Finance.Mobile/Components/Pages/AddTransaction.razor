@@ -8,10 +8,14 @@
     <p class="muted">Tanggal otomatis hari ini: @date.ToString("dd MMM yyyy")</p>
 
     <div class="seg">
-        <button type="button" class="@(type==0?"on":"")" @onclick="()=>type=0">Expense</button>
-        <button type="button" class="@(type==1?"on":"")" @onclick="()=>type=1">Income</button>
-        <button type="button" class="@(type==2?"on":"")" @onclick="()=>type=2">Transfer</button>
+        <button type="button" class="@(type==0?"on":"")" @onclick="()=>SetType(0)">Expense</button>
+        <button type="button" class="@(type==1?"on":"")" @onclick="()=>SetType(1)">Income</button>
+        <button type="button" class="@(type==2?"on":"")" @onclick="()=>SetType(2)">Transfer</button>
     </div>
+    @if (!string.IsNullOrEmpty(loadError))
+    {
+        <div class="confirm" style="background:#fee2e2; color:#991b1b;">@loadError <button @onclick="LoadCategories" style="margin-left:8px; padding:4px 8px; border:1px solid #fecaca; border-radius:6px; background:#fff;">Retry</button></div>
+    }
 
     <label>Nominal (Rp)</label>
     <input type="number" @bind="amount" placeholder="25000" />
@@ -113,10 +117,17 @@ input, select { width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-ra
     private string? confirm;
     private List<(string Text, DateTime Time)> recent = new();
     private List<CatDto> categories = new();
+    private string? loadError;
 
     protected override async Task OnInitializedAsync()
     {
         date = DateTime.Today;
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        loadError = null;
         try
         {
             var client = HttpFactory.CreateClient("Api");
@@ -124,8 +135,19 @@ input, select { width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-ra
             if (syafri != null) client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", syafri.accessToken);
             var cats = await client.GetFromJsonAsync<List<CatDto>>("/api/v1/categories");
             if (cats != null) categories = cats;
+            if (categories.Count == 0) loadError = "Kategori kosong — cek API";
+            StateHasChanged();
         }
-        catch { }
+        catch (Exception ex) { loadError = $"Gagal load kategori: {ex.Message}"; }
+    }
+
+    private void SetType(int t)
+    {
+        type = t;
+        category = null;
+        confirm = null;
+        status = "pending";
+        StateHasChanged();
     }
 
     private async Task Save()

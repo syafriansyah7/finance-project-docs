@@ -20,11 +20,18 @@ public static class MauiProgram
 		builder.Services.AddBlazorWebViewDeveloperTools();
 #endif
 
-		builder.Services.AddSingleton<ISyncQueue>(sp => new SqliteSyncQueue(System.IO.Path.Combine(FileSystem.AppDataDirectory, "finance.db")));
+		builder.Services.AddSingleton<ISyncQueue>(sp =>
+		{
+			try { return new SqliteSyncQueue(System.IO.Path.Combine(FileSystem.AppDataDirectory, "finance.db")); }
+			catch { return new InMemorySyncQueue(); }
+		});
 		builder.Services.AddSingleton(sp =>
 		{
-			var url = Preferences.Get("api_url", "https://senate-equipment-univ-generate.trycloudflare.com");
-			return new HttpClient { BaseAddress = new Uri(url) };
+			string url;
+			try { url = Preferences.Get("api_url", "http://192.168.1.8:5000"); } catch { url = "http://192.168.1.8:5000"; }
+			if (string.IsNullOrWhiteSpace(url)) url = "http://192.168.1.8:5000";
+			if (!url.StartsWith("http")) url = "https://" + url;
+			return new HttpClient { BaseAddress = new Uri(url), Timeout = TimeSpan.FromSeconds(10) };
 		});
 
 		return builder.Build();
